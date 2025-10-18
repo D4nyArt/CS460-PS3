@@ -53,20 +53,121 @@ public class InsertRow {
      * Takes the collection of values for this InsertRow
      * and marshalls them into a key/value pair.
      * 
+     * The method performs the following steps:
+     * 1. Computes the offsets for each column value
+     * 2. Writes the offset table to the value buffer
+     * 3. Writes the primary key value to the key buffer
+     * 4. Writes all non-null, non-primary-key values to the value buffer
+     * 
      * (Note: We include a throws clause because this method will use 
      * methods like writeInt() that the RowOutput class inherits from 
      * DataOutputStream, and those methods could in theory throw that 
      * exception. In reality, an IOException should *not* occur in the
      * context of our RowOutput class.)
+     * 
+     * @throws IOException if an I/O error occurs during marshalling
      */
     public void marshall() throws IOException {
-        /* 
-         * PS 3: Implement this method. 
-         * 
-         * Feel free to also add one or more private helper methods
-         * to do some of the work (e.g., to fill in the offsets array
-         * with the appropriate offsets).
-         */
+
+        int pkIndex = table.primaryKeyColumn().getIndex();
+        
+        this.offsets = computeOffsets(this.columnVals, pkIndex);
+
+        // Write offset table header to value buffer
+        for(int i = 0; i<this.offsets.length; i++){
+            this.valueBuffer.writeShort(this.offsets[i]);
+        }
+
+        // Write each column value to appropriate buffer
+        for(int i = 0; i<this.columnVals.length; i++){
+            int columnType = table.getColumn(i).getType();
+
+            if (this.offsets[i] == IS_PKEY){
+                // Primary key goes to key buffer
+                switch (columnType) {
+                    case 0: 
+                        this.keyBuffer.writeInt(((Integer) columnVals[i]).intValue());
+                        break;
+                    case 1:
+                        this.keyBuffer.writeDouble(((Double) columnVals[i]).doubleValue());
+                        break;
+                    case 2: 
+                        this.keyBuffer.writeBytes((String) columnVals[i]);
+                        break;
+                    case 3:
+                        this.keyBuffer.writeBytes((String) columnVals[i]);
+                        break;
+                }
+            } else if (this.offsets[i] != IS_NULL) {
+                // Non-null, non-primary-key values go to value buffer
+                switch (columnType) {
+                    case 0: 
+                        this.valueBuffer.writeInt(((Integer) columnVals[i]).intValue());
+                        break;
+                    case 1: 
+                        this.valueBuffer.writeDouble(((Double) columnVals[i]).doubleValue());
+                        break;
+                    case 2: 
+                        this.valueBuffer.writeBytes((String) columnVals[i]);
+                        break;
+                    case 3: 
+                        this.valueBuffer.writeBytes((String) columnVals[i]);
+                        break;
+                }
+            }
+            // Note: NULL values are skipped cause they only appear in offset table
+        }         
+    }
+
+    /**
+     * Computes the offset values for each column in the row.
+     * 
+     * The offset array contains one entry for each column, plus one final
+     * entry for the end-of-record offset. For each column.
+     * 
+     * @param  values  the array of column values to be marshalled
+     * @param  pkIdx   the index of the primary key column
+     * @return an array of offsets, one per column plus one for end-of-record
+     * @throws IOException if an I/O error occurs while computing offsets
+     */
+    private int[] computeOffsets(Object[] values, int pkIdx) throws IOException {
+        int[] offsetValues = new int[values.length + 1];
+        
+        int currentOffset = (values.length + 1) * 2;
+        
+        for (int i = 0; i < values.length; i++) {
+            if (i == pkIdx) {
+                // Primary key column
+                offsetValues[i] = IS_PKEY;
+            } else if (values[i] == null) {
+                // Null value
+                offsetValues[i] = IS_NULL;
+            } else {
+                // Non-null, non-primary-key column
+                offsetValues[i] = currentOffset;
+                
+                // Add the size of this column's value to get the next offset
+                int columnType = table.getColumn(i).getType();
+                switch (columnType) {
+                    case 0: 
+                        currentOffset += 4;
+                        break;
+                    case 1: 
+                        currentOffset += 8;
+                        break;
+                    case 2: 
+                        currentOffset += table.getColumn(i).getLength();
+                        break;
+                    case 3:
+                        currentOffset += ((String) values[i]).length();
+                        break;
+                }
+            }
+        }
+        
+        offsetValues[values.length] = currentOffset;
+        
+        return offsetValues;
     }
         
     /**

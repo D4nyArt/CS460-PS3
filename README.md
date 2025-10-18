@@ -35,3 +35,14 @@ ColumnOptions - Stores column constraints (NOT NULL, PRIMARY KEY)
 ## Storage Engine ##
 
 The system uses Berkeley DB (Java Edition) for storage, as evidenced by the db directory with .jdb files and configuration
+
+## Compile and execute instructions ##
+to compile:
+*javac -cp 'lib/*' -d classes *.java*
+
+to run on Windows:
+*java -cp 'lib/*;classes' DBMS*
+
+to run on macOS:
+*java -cp 'lib/*:classes' DBMS*
+
