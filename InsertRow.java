@@ -59,13 +59,12 @@ public class InsertRow {
      * 3. Writes the primary key value to the key buffer
      * 4. Writes all non-null, non-primary-key values to the value buffer
      * 
-     * (Note: We include a throws clause because this method will use 
-     * methods like writeInt() that the RowOutput class inherits from 
-     * DataOutputStream, and those methods could in theory throw that 
-     * exception. In reality, an IOException should *not* occur in the
-     * context of our RowOutput class.)
-     * 
      * @throws IOException if an I/O error occurs during marshalling
+     * In theory could occur because this method will use 
+     * methods like writeInt() that the RowOutput class inherits from 
+     * DataOutputStreamIn but in reality, an IOException should not occur in the
+     * context of our RowOutput class.
+     * 
      */
     public void marshall() throws IOException {
 
@@ -120,14 +119,14 @@ public class InsertRow {
     }
 
     /**
-     * Computes the offset values for each column in the row.
+     * Helper function that computes the offset values for each column in the row.
      * 
      * The offset array contains one entry for each column, plus one final
-     * entry for the end-of-record offset. For each column.
+     * entry for the end of record offset for each column.
      * 
      * @param  values  the array of column values to be marshalled
      * @param  pkIdx   the index of the primary key column
-     * @return an array of offsets, one per column plus one for end-of-record
+     * @return an array of offsets, one per column plus one for the end of record
      * @throws IOException if an I/O error occurs while computing offsets
      */
     private int[] computeOffsets(Object[] values, int pkIdx) throws IOException {
