@@ -3,8 +3,7 @@
  *
  * DBMS Implementation
  * 
- * edited by: name and email
- * partner (if any): name and email
+ * edited by: Daniel Arteaga (d4nyart@bu.edu)
  */
 
 import java.io.*;
